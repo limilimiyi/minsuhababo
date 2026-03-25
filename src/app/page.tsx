@@ -226,6 +226,28 @@ export default function DialogueTreeApp() {
             ))}
           </div>
           <button onClick={handleResetView} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm shadow-lg transition-all active:scale-95 flex items-center gap-2">🏠</button>
+          
+          <div className="relative group flex items-center ml-2">
+            <div className="w-8 h-8 rounded-full bg-slate-200 hover:bg-blue-100 text-slate-500 hover:text-blue-600 font-black text-sm flex items-center justify-center transition-colors cursor-help">
+              ?
+            </div>
+            <div className="absolute right-0 top-full mt-2 w-max max-w-sm bg-slate-800 text-white p-4 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[9999] border-2 border-slate-700 pointer-events-none">
+              <h3 className="font-bold text-sm mb-3 text-slate-300 border-b border-slate-700 pb-2">기능 설명 / Help / ヘルプ</h3>
+              <ul className="text-xs space-y-2.5 font-medium tracking-tight">
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">📝</span> <span>일반 대사 / Dialogue / 通常のセリフ</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">❓</span> <span>질문 / Question / 質問</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🔀</span> <span>선택지 / Choice / 選択肢</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">➕</span> <span>하위 추가 / Add Child / 子ノード追加</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👤</span> <span>캐릭터 숨기기 / Toggle Character / キャラクタートグル</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👁️</span> <span>하위 접기 / Fold Nodes / 折りたたむ・展開</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">✅</span> <span>검토 완료 / Review Complete / 確認完了</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🗑️</span> <span>노드 삭제 / Delete Node / ノード削除</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">📋</span> <span>텍스트 복사 / Copy Text / テキストをコピー</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🏠</span> <span>위치 초기화 / Reset View / 視点をリセット</span></li>
+              </ul>
+            </div>
+          </div>
+
           <div className="text-xs font-bold text-slate-400 border-l pl-4 border-slate-200">● LIVE</div>
         </div>
       </div>
