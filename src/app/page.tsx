@@ -19,6 +19,8 @@ const INITIAL_NODE: DialogueNodeData = {
 export default function DialogueTreeApp() {
   const [nodes, setNodes] = useState<DialogueNodeData[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [foldedNodes, setFoldedNodes] = useState<Set<string>>(new Set()); // 접힌 노드 ID들
+  const [visibleLangs, setVisibleLangs] = useState({ kr: true, en: true, jp: true });
   const transformRef = useRef<any>(null);
   const pendingUpdates = useRef<Record<string, any>>({});
 
@@ -43,12 +45,9 @@ export default function DialogueTreeApp() {
     fetchInitialData();
   }, []);
 
-  // 로딩 완료 시 루트 노드 기준으로 중앙 정렬
   useEffect(() => {
     if (isLoaded && transformRef.current) {
-      setTimeout(() => {
-        transformRef.current.centerView(1, 400);
-      }, 200);
+      setTimeout(() => transformRef.current.centerView(1, 400), 200);
     }
   }, [isLoaded]);
 
@@ -94,6 +93,13 @@ export default function DialogueTreeApp() {
     setNodes(prev => [...prev, newNode]);
     const { error } = await supabase.from('nodes').insert([newNode]);
     if (error) setNodes(prev => prev.filter(n => n.id !== newNode.id));
+    
+    // 자식을 추가하면 자동으로 부모의 접기 해제
+    setFoldedNodes(prev => {
+      const next = new Set(prev);
+      next.delete(parent_id);
+      return next;
+    });
   }, []);
 
   const handleDeleteNode = useCallback(async (id: string) => {
@@ -102,25 +108,45 @@ export default function DialogueTreeApp() {
     }
   }, []);
 
+  const toggleFold = (id: string) => {
+    setFoldedNodes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const renderTree = (parent_id: string | null, depth = 0) => {
     if (depth > 200) return null;
     const childrenNodes = nodes.filter(n => n.parent_id === parent_id);
     if (childrenNodes.length === 0) return null;
 
+    const isSingleChild = childrenNodes.length === 1;
+
     return (
-      <div className={parent_id ? "tree-children" : "tree-container"}>
-        {childrenNodes.map(node => (
-          <div key={node.id} className="tree-node-wrapper">
-            <DialogueNode
-              node={node}
-              isRoot={node.parent_id === null}
-              onUpdate={handleUpdateNode}
-              onAddChild={handleAddChild}
-              onDelete={handleDeleteNode}
-            />
-            {renderTree(node.id, depth + 1)}
-          </div>
-        ))}
+      <div className={`${parent_id ? "tree-children" : "tree-container"} ${isSingleChild ? 'single-child' : ''}`}>
+        {childrenNodes.map(node => {
+          const hasChildren = nodes.some(n => n.parent_id === node.id);
+          const isFolded = foldedNodes.has(node.id);
+
+          return (
+            <div key={node.id} className="tree-node-wrapper">
+              <DialogueNode
+                node={node}
+                isRoot={node.parent_id === null}
+                onUpdate={handleUpdateNode}
+                onAddChild={handleAddChild}
+                onDelete={handleDeleteNode}
+                isFolded={isFolded}
+                hasChildren={hasChildren}
+                onToggleFold={() => toggleFold(node.id)}
+                visibleLangs={visibleLangs}
+              />
+              {!isFolded && renderTree(node.id, depth + 1)}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -129,30 +155,44 @@ export default function DialogueTreeApp() {
     <div className="h-screen bg-slate-100 flex flex-col overflow-hidden font-sans">
       <style dangerouslySetInnerHTML={{__html: `
         .tree-container { display: flex; flex-direction: column; align-items: center; }
-        .tree-children { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; position: relative; }
-        .tree-children::before { content: ''; position: absolute; top: 0; left: 50%; width: 4px; height: 32px; background-color: #cbd5e1; transform: translateX(-50%); }
-        
-        .tree-node-wrapper { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 24px; padding-top: 64px; }
-        .tree-node-wrapper::before { content: ''; position: absolute; top: 32px; left: 0; width: 100%; height: 4px; background-color: #cbd5e1; }
-        .tree-node-wrapper::after { content: ''; position: absolute; top: 32px; left: 50%; width: 4px; height: 32px; background-color: #cbd5e1; transform: translateX(-50%); }
-        
-        /* 최상위 루트 노드 스타일 보정: 선 제거 및 여백 삭제 */
-        .tree-container > .tree-node-wrapper { padding-top: 0; }
-        .tree-container > .tree-node-wrapper::before,
-        .tree-container > .tree-node-wrapper::after { display: none; }
-
+        .tree-children { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; position: relative; margin-top: 24px; }
+        .tree-children::before { content: ''; position: absolute; top: -24px; left: 50%; width: 4px; height: 24px; background-color: #cbd5e1; transform: translateX(-50%); }
+        .tree-node-wrapper { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 60px; padding-top: 24px; }
+        .tree-node-wrapper::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: #cbd5e1; }
+        .tree-node-wrapper::after { content: ''; position: absolute; top: 0; left: 50%; width: 4px; height: 24px; background-color: #cbd5e1; transform: translateX(-50%); }
         .tree-node-wrapper:only-child::before { display: none; }
         .tree-node-wrapper:first-child::before { left: 50%; width: 50%; }
         .tree-node-wrapper:last-child::before { left: 0; width: 50%; }
+        .single-child { margin-top: 0 !important; }
+        .single-child::before { display: none !important; }
+        .single-child > .tree-node-wrapper { padding-top: 0 !important; }
+        .single-child > .tree-node-wrapper::before, .single-child > .tree-node-wrapper::after { display: none !important; }
+        .tree-container > .tree-node-wrapper { padding-top: 0; }
       `}} />
 
-      <div className="flex-shrink-0 p-4 shadow-sm bg-white border-b border-slate-200 flex justify-between items-center z-20 relative">
-        <h1 className="text-2xl font-black text-slate-800 tracking-tight italic">
-          ANTIGRAVITY <span className="text-blue-600 not-italic">REALTIME</span>
-        </h1>
+      <div className="flex-shrink-0 p-4 shadow-sm bg-white border-b border-slate-200 flex justify-between items-center z-20 relative px-8">
+        <div className="flex items-center gap-3 group cursor-default">
+          <div className="w-10 h-10 bg-slate-800 rounded flex items-center justify-center font-black text-white text-xl shadow-lg group-hover:bg-blue-600 transition-colors">S</div>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">SUHA<span className="text-blue-600 italic">BABO</span></h1>
+        </div>
         <div className="flex items-center gap-4">
-          <button onClick={() => transformRef.current?.centerView(1, 300)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm shadow-lg transition-all active:scale-95">🏠</button>
-          <div className="text-xs font-bold text-slate-400">● {isLoaded ? 'LIVE' : 'SYNCING'}</div>
+          <div className="flex gap-1 bg-slate-200 p-1 rounded">
+            {[
+              { id: 'kr', label: 'KR' },
+              { id: 'en', label: 'EN' },
+              { id: 'jp', label: 'JP' }
+            ].map(lang => (
+              <button
+                key={lang.id}
+                onClick={() => setVisibleLangs(prev => ({ ...prev, [lang.id]: !prev[lang.id as keyof typeof prev] }))}
+                className={`px-3 py-1 rounded text-xs font-black transition-colors ${visibleLangs[lang.id as keyof typeof visibleLangs] ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => transformRef.current?.centerView(1, 300)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm shadow-lg transition-all active:scale-95 flex items-center gap-2">🏠</button>
+          <div className="text-xs font-bold text-slate-400 border-l pl-4 border-slate-200">● LIVE</div>
         </div>
       </div>
 
@@ -162,10 +202,7 @@ export default function DialogueTreeApp() {
         ) : (
           <TransformWrapper ref={transformRef} initialScale={1} centerOnInit={true} limitToBounds={false} doubleClick={{ disabled: true }} panning={{ excluded: ["input", "textarea", "select", "button", "no-pan"] }}>
             <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "auto", height: "auto" }}>
-              {/* 패딩을 줄이고 정중앙 배치를 위해 inline-flex 사용 */}
-              <div className="p-[500px] inline-flex flex-col items-center">
-                {renderTree(null)}
-              </div>
+              <div className="p-[500px] inline-flex flex-col items-center">{renderTree(null)}</div>
             </TransformComponent>
           </TransformWrapper>
         )}

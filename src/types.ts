@@ -1,4 +1,4 @@
-export type NodeType = 'dialogue' | 'choice';
+export type NodeType = 'dialogue' | 'question' | 'choice';
 
 export interface DialogueNodeData {
   id: string;
