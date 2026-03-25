@@ -105,7 +105,7 @@ export default function DialogueTreeApp() {
   }, []);
 
   const handleDeleteNode = useCallback(async (id: string) => {
-    if (confirm('이 노드와 모든 하위 노드를 삭제할까요?')) {
+    if (confirm('이 대사와 모든 하위 대사를 삭제할까요?')) {
       setNodes(prev => prev.filter(n => n.id !== id)); // 즉각적인 UI 반영 (빨리빨리)
       await supabase.from('nodes').delete().eq('id', id);
     }
@@ -233,17 +233,23 @@ export default function DialogueTreeApp() {
             </div>
             <div className="absolute right-0 top-full mt-2 w-max max-w-sm bg-slate-800 text-white p-4 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[9999] border-2 border-slate-700 pointer-events-none">
               <h3 className="font-bold text-sm mb-3 text-slate-300 border-b border-slate-700 pb-2">기능 설명 / Help / ヘルプ</h3>
+              
+              <div className="text-[11px] text-slate-300 mb-4 space-y-1.5 bg-slate-700/50 p-2.5 rounded-lg border border-slate-600/50">
+                <p>💡 <b>언어 필터:</b> 상단 <b>KR/EN/JP</b> 버튼으로 보고 싶은 언어만 골라서 볼 수 있습니다.</p>
+                <p>💡 <b>색상 구분:</b> 종류 버튼(📝❓🔀)을 누르면 대사 상자의 <b>색상이 변해서</b> 시각적으로 알아보기 아주 쉽습니다!</p>
+              </div>
+
               <ul className="text-xs space-y-2.5 font-medium tracking-tight">
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">📝</span> <span>일반 대사 / Dialogue / 通常のセリフ</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">❓</span> <span>질문 / Question / 質問</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🔀</span> <span>선택지 / Choice / 選択肢</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">➕</span> <span>하위 추가 / Add Child / 子ノード追加</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👤</span> <span>캐릭터 숨기기 / Toggle Character / キャラクタートグル</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👁️</span> <span>하위 접기 / Fold Nodes / 折りたたむ・展開</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">➕</span> <span>하위 대사 추가 / Add Child / 子セリフ追加</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👤</span> <span>캐릭터 칸 숨기기 / Toggle Character / キャラクタートグル</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👁️</span> <span>하위 대사 접기 / Fold Lines / 折りたたむ・展開</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">✅</span> <span>검토 완료 / Review Complete / 確認完了</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🗑️</span> <span>노드 삭제 / Delete Node / ノード削除</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🗑️</span> <span>대사 삭제 / Delete / セリフ削除</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">📋</span> <span>텍스트 복사 / Copy Text / テキストをコピー</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🏠</span> <span>위치 초기화 / Reset View / 視点をリセット</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🏠</span> <span>최초 대사로 이동 / Reset View / 視点をリセット</span></li>
               </ul>
             </div>
           </div>

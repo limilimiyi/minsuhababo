@@ -162,7 +162,7 @@ export default function DialogueNode({
         <button
           onClick={() => onAddChild(node.id, 'dialogue')}
           className="w-7 h-7 bg-slate-800 hover:bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white"
-          title="하위 노드 추가"
+          title="하위 대사 추가"
         >
           ➕
         </button>
