@@ -240,9 +240,9 @@ export default function DialogueTreeApp() {
               </div>
 
               <ul className="text-xs space-y-2.5 font-medium tracking-tight">
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">📝</span> <span>일반 대사 / Dialogue / 通常のセリフ</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">❓</span> <span>질문 / Question / 質問</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🔀</span> <span>선택지 / Choice / 選択肢</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">📝</span> <span>노드 종류: 일반 대사 / Type: Dialogue / タイプ: 通常のセリフ</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">❓</span> <span>노드 종류: 질문 / Type: Question / タイプ: 質問</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🔀</span> <span>노드 종류: 선택지 / Type: Choice / タイプ: 選択肢</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">➕</span> <span>하위 대사 추가 / Add Child / 子セリフ追加</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👤</span> <span>캐릭터 칸 숨기기 / Toggle Character / キャラクタートグル</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👁️</span> <span>하위 대사 접기 / Fold Lines / 折りたたむ・展開</span></li>
