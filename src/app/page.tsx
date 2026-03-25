@@ -219,7 +219,7 @@ export default function DialogueTreeApp() {
         .tree-container > .tree-node-wrapper { padding-top: 0; }
       `}} />
 
-      <div className="flex-shrink-0 p-3 md:p-4 shadow-sm bg-white border-b border-slate-200 flex justify-between items-center z-20 relative px-3 md:px-8">
+      <div className="fixed top-0 left-0 w-full flex-shrink-0 p-3 md:p-4 shadow-sm bg-white border-b border-slate-200 flex justify-between items-center z-[100] px-3 md:px-8">
         <div className="flex items-center gap-2 md:gap-3 group cursor-default">
           <div className="w-8 h-8 md:w-10 md:h-10 bg-slate-800 rounded flex items-center justify-center font-black text-white text-lg md:text-xl shadow-lg group-hover:bg-blue-600 transition-colors">S</div>
           <h1 className="text-lg md:text-2xl font-black text-slate-800 tracking-tighter uppercase hidden sm:block">SUHA<span className="text-blue-600 italic">BABO</span></h1>
@@ -283,7 +283,7 @@ export default function DialogueTreeApp() {
         </div>
       </div>
 
-      <div className="flex-1 relative bg-slate-600" style={{ backgroundImage: 'radial-gradient(#475569 2px, transparent 2px)', backgroundSize: '40px 40px' }}>
+      <div className="flex-1 relative bg-slate-600 pt-[60px] md:pt-[72px]" style={{ backgroundImage: 'radial-gradient(#475569 2px, transparent 2px)', backgroundSize: '40px 40px' }}>
         {!isLoaded ? (
           <div className="h-full w-full flex items-center justify-center text-white font-black text-2xl animate-pulse tracking-widest bg-slate-800 z-50">SYNCING...</div>
         ) : isMobileView ? (
