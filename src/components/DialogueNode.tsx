@@ -32,7 +32,6 @@ function DialogueNodeInner({
 }: DialogueNodeProps) {
   const [showCharacter, setShowCharacter] = useState(true);
   
-  // 입력창 참조 (직접 DOM 제어하여 IME 깨짐 방지)
   const textRefs = {
     kr: useRef<HTMLTextAreaElement>(null),
     en: useRef<HTMLTextAreaElement>(null),
@@ -40,13 +39,13 @@ function DialogueNodeInner({
   };
   
   const isEditingRef = useRef<Record<string, boolean>>({});
+  const isComposingRef = useRef<Record<string, boolean>>({}); // 한글 조합 중인지 확인
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
-  // 외부 데이터가 바뀌었을 때 처리
+  // 외부 데이터 동기화: 편집 중이 아닐 때만
   useEffect(() => {
     (Object.keys(node.translations) as Array<keyof typeof textRefs>).forEach(lang => {
       const ref = textRefs[lang].current;
-      // 현재 내가 입력 중인 칸이 아닐 때만 외부 데이터 반영
       if (ref && !isEditingRef.current[lang]) {
         if (ref.value !== node.translations[lang]) {
           ref.value = node.translations[lang] || '';
@@ -59,10 +58,10 @@ function DialogueNodeInner({
     e.stopPropagation();
   };
 
-  const handleInput = (lang: keyof DialogueNodeData['translations'], value: string) => {
-    isEditingRef.current[lang] = true;
+  const handleUpdate = (lang: keyof DialogueNodeData['translations'], value: string) => {
+    // 조합 중(IME)일 때는 서버 업데이트를 아예 하지 않음 (씹힘 방지의 핵심)
+    if (isComposingRef.current[lang]) return;
 
-    // 서버 업데이트 디바운싱
     if (debounceTimers.current[lang]) clearTimeout(debounceTimers.current[lang]);
     debounceTimers.current[lang] = setTimeout(() => {
       onUpdate(node.id, {
@@ -71,13 +70,7 @@ function DialogueNodeInner({
           [lang]: value
         }
       });
-      // 저장이 완료된 후 잠시 뒤에 편집 상태 해제
-      setTimeout(() => {
-        if (document.activeElement !== textRefs[lang].current) {
-          isEditingRef.current[lang] = false;
-        }
-      }, 1000);
-    }, 500);
+    }, 400);
   };
 
   const getTypeColors = () => {
@@ -151,7 +144,12 @@ function DialogueNodeInner({
                           isEditingRef.current[lang.id] = false;
                           onUpdate(node.id, { translations: { ...node.translations, [lang.id]: e.target.value } });
                         }}
-                        onInput={(e) => handleInput(lang.id as keyof DialogueNodeData['translations'], (e.target as HTMLTextAreaElement).value)}
+                        onCompositionStart={() => { isComposingRef.current[lang.id] = true; }}
+                        onCompositionEnd={(e) => { 
+                          isComposingRef.current[lang.id] = false;
+                          handleUpdate(lang.id as keyof DialogueNodeData['translations'], (e.target as HTMLTextAreaElement).value);
+                        }}
+                        onInput={(e) => handleUpdate(lang.id as keyof DialogueNodeData['translations'], (e.target as HTMLTextAreaElement).value)}
                         onKeyDownCapture={stopCapture}
                         onPointerDownCapture={stopCapture}
                         onMouseDownCapture={stopCapture}

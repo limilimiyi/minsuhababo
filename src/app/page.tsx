@@ -148,7 +148,14 @@ export default function DialogueTreeApp() {
             if (payload.eventType === 'INSERT') {
               setNodes(prev => prev.find(n => n.id === payload.new.id) ? prev : [...prev, payload.new as DialogueNodeData]);
             } else if (payload.eventType === 'UPDATE') {
-              setNodes(prev => prev.map(n => n.id === payload.new.id ? { ...n, ...payload.new } : n));
+              setNodes(prev => {
+                const existing = prev.find(n => n.id === payload.new.id);
+                // 데이터가 실제로 바뀌었을 때만 업데이트 (중복 렌더링 방지)
+                if (existing && JSON.stringify(existing) === JSON.stringify(payload.new)) {
+                  return prev;
+                }
+                return prev.map(n => n.id === payload.new.id ? { ...n, ...payload.new } : n);
+              });
             } else if (payload.eventType === 'DELETE') {
               setNodes(prev => prev.filter(n => n.id !== payload.old.id));
             }
