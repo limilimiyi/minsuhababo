@@ -64,7 +64,7 @@ export default function DialogueTreeApp() {
             } else if (payload.eventType === 'UPDATE') {
               setNodes(prev => prev.map(n => n.id === payload.new.id ? { ...n, ...payload.new } : n));
             } else if (payload.eventType === 'DELETE') {
-              setNodes(prev => prev.filter(n => n.id === payload.old.id));
+              setNodes(prev => prev.filter(n => n.id !== payload.old.id));
             }
           })
       .subscribe();
@@ -106,6 +106,7 @@ export default function DialogueTreeApp() {
 
   const handleDeleteNode = useCallback(async (id: string) => {
     if (confirm('이 노드와 모든 하위 노드를 삭제할까요?')) {
+      setNodes(prev => prev.filter(n => n.id !== id)); // 즉각적인 UI 반영 (빨리빨리)
       await supabase.from('nodes').delete().eq('id', id);
     }
   }, []);
