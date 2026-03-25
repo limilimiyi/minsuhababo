@@ -201,7 +201,7 @@ export default function DialogueTreeApp() {
           <div className="h-full w-full flex items-center justify-center text-white font-black text-2xl animate-pulse tracking-widest bg-slate-800 z-50">SYNCING...</div>
         ) : (
           <>
-            <div className="absolute right-8 bottom-8 z-50 flex flex-col gap-2 bg-white/90 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border-4 border-slate-300">
+            <div className="fixed right-8 bottom-8 flex flex-col gap-2 bg-white/90 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border-4 border-slate-300" style={{ zIndex: 9999 }}>
               <button onClick={() => transformRef.current?.zoomIn()} className="w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm" title="확대(Zoom In)">➕</button>
               <button onClick={() => transformRef.current?.zoomOut()} className="w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm" title="축소(Zoom Out)">➖</button>
               <button onClick={() => transformRef.current?.centerView(1, 300)} className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-xl flex items-center justify-center transition-all active:scale-90 shadow-lg mt-2" title="화면 중앙 정렬(Reset View)">🏠</button>
