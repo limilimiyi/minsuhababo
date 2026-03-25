@@ -47,9 +47,11 @@ export default function DialogueTreeApp() {
 
   useEffect(() => {
     if (isLoaded && transformRef.current) {
-      setTimeout(() => transformRef.current.centerView(1, 400), 200);
+      setTimeout(() => {
+        handleResetView();
+      }, 200);
     }
-  }, [isLoaded]);
+  }, [isLoaded, nodes]);
 
   useEffect(() => {
     const channel = supabase
@@ -117,6 +119,16 @@ export default function DialogueTreeApp() {
     });
   };
 
+  const handleResetView = useCallback(() => {
+    if (!transformRef.current) return;
+    const rootNode = nodes.find(n => n.parent_id === null);
+    if (rootNode) {
+      transformRef.current.zoomToElement(`tree-node-${rootNode.id}`, 1, 300);
+    } else {
+      transformRef.current.centerView(1, 300);
+    }
+  }, [nodes]);
+
   const renderTree = (parent_id: string | null, depth = 0) => {
     if (depth > 200) return null;
     const childrenNodes = nodes.filter(n => n.parent_id === parent_id);
@@ -131,7 +143,7 @@ export default function DialogueTreeApp() {
           const isFolded = foldedNodes.has(node.id);
 
           return (
-            <div key={node.id} className="tree-node-wrapper">
+            <div key={node.id} id={`tree-node-${node.id}`} className="tree-node-wrapper">
               <DialogueNode
                 node={node}
                 isRoot={node.parent_id === null}
@@ -191,7 +203,7 @@ export default function DialogueTreeApp() {
               </button>
             ))}
           </div>
-          <button onClick={() => transformRef.current?.centerView(1, 300)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm shadow-lg transition-all active:scale-95 flex items-center gap-2">🏠</button>
+          <button onClick={handleResetView} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm shadow-lg transition-all active:scale-95 flex items-center gap-2">🏠</button>
           <div className="text-xs font-bold text-slate-400 border-l pl-4 border-slate-200">● LIVE</div>
         </div>
       </div>
@@ -204,7 +216,7 @@ export default function DialogueTreeApp() {
             <div className="fixed right-8 bottom-8 flex flex-col gap-2 bg-white/90 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border-4 border-slate-300" style={{ zIndex: 9999 }}>
               <button onClick={() => transformRef.current?.zoomIn()} className="w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm" title="확대(Zoom In)">➕</button>
               <button onClick={() => transformRef.current?.zoomOut()} className="w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm" title="축소(Zoom Out)">➖</button>
-              <button onClick={() => transformRef.current?.centerView(1, 300)} className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-xl flex items-center justify-center transition-all active:scale-90 shadow-lg mt-2" title="화면 중앙 정렬(Reset View)">🏠</button>
+              <button onClick={handleResetView} className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-xl flex items-center justify-center transition-all active:scale-90 shadow-lg mt-2" title="최초 노드로 화면 정중앙 이동(Reset View)">🏠</button>
             </div>
             <TransformWrapper ref={transformRef} initialScale={1} minScale={0.1} maxScale={4} centerOnInit={true} limitToBounds={false} doubleClick={{ disabled: true }} panning={{ excluded: ["input", "textarea", "select", "button", "no-pan"] }}>
               <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "auto", height: "auto" }}>
