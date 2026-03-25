@@ -38,18 +38,27 @@ function DialogueNodeInner({
     jp: useRef<HTMLTextAreaElement>(null),
   };
   
-  const isEditingRef = useRef<Record<string, boolean>>({});
-  const isComposingRef = useRef<Record<string, boolean>>({}); // 한글 조합 중인지 확인
+  const isComposingRef = useRef<Record<string, boolean>>({}); 
+  const lastSentValues = useRef<Record<string, string>>({}); // 내가 마지막으로 보낸 값 저장
   const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
-  // 외부 데이터 동기화: 편집 중이 아닐 때만
+  // 외부 데이터 동기화 로직 (강력한 보호)
   useEffect(() => {
     (Object.keys(node.translations) as Array<keyof typeof textRefs>).forEach(lang => {
       const ref = textRefs[lang].current;
-      if (ref && !isEditingRef.current[lang]) {
-        if (ref.value !== node.translations[lang]) {
-          ref.value = node.translations[lang] || '';
-        }
+      if (!ref) return;
+
+      const incomingValue = node.translations[lang] || '';
+      
+      // 보호 조건 1: 현재 이 입력창에 포커스가 있다면 절대 건드리지 않음 (중복 입력 방지의 핵심)
+      if (document.activeElement === ref) return;
+
+      // 보호 조건 2: 내가 방금 보낸 값과 서버에서 온 값이 같다면 무시
+      if (incomingValue === lastSentValues.current[lang]) return;
+
+      // 위 조건들을 통과했을 때만 화면 업데이트
+      if (ref.value !== incomingValue) {
+        ref.value = incomingValue;
       }
     });
   }, [node.translations]);
@@ -58,19 +67,25 @@ function DialogueNodeInner({
     e.stopPropagation();
   };
 
-  const handleUpdate = (lang: keyof DialogueNodeData['translations'], value: string) => {
-    // 조합 중(IME)일 때는 서버 업데이트를 아예 하지 않음 (씹힘 방지의 핵심)
+  const sendUpdate = (lang: keyof DialogueNodeData['translations'], value: string) => {
     if (isComposingRef.current[lang]) return;
+    
+    // 내가 보낸 값을 기록 (메아리 방지)
+    lastSentValues.current[lang] = value;
+    
+    onUpdate(node.id, {
+      translations: {
+        ...node.translations,
+        [lang]: value
+      }
+    });
+  };
 
+  const handleInput = (lang: keyof DialogueNodeData['translations'], value: string) => {
     if (debounceTimers.current[lang]) clearTimeout(debounceTimers.current[lang]);
     debounceTimers.current[lang] = setTimeout(() => {
-      onUpdate(node.id, {
-        translations: {
-          ...node.translations,
-          [lang]: value
-        }
-      });
-    }, 400);
+      sendUpdate(lang, value);
+    }, 500);
   };
 
   const getTypeColors = () => {
@@ -139,17 +154,15 @@ function DialogueNodeInner({
                         rows={1}
                         className="no-pan flex-1 border-2 border-slate-200 rounded-none p-1 text-xs resize-y bg-white outline-none focus:border-slate-800 transition-colors block font-medium text-slate-950"
                         defaultValue={node.translations[lang.id as keyof DialogueNodeData['translations']] || ''}
-                        onFocus={() => { isEditingRef.current[lang.id] = true; }}
                         onBlur={(e) => { 
-                          isEditingRef.current[lang.id] = false;
-                          onUpdate(node.id, { translations: { ...node.translations, [lang.id]: e.target.value } });
+                          sendUpdate(lang.id as keyof DialogueNodeData['translations'], e.target.value);
                         }}
                         onCompositionStart={() => { isComposingRef.current[lang.id] = true; }}
                         onCompositionEnd={(e) => { 
                           isComposingRef.current[lang.id] = false;
-                          handleUpdate(lang.id as keyof DialogueNodeData['translations'], (e.target as HTMLTextAreaElement).value);
+                          sendUpdate(lang.id as keyof DialogueNodeData['translations'], (e.target as HTMLTextAreaElement).value);
                         }}
-                        onInput={(e) => handleUpdate(lang.id as keyof DialogueNodeData['translations'], (e.target as HTMLTextAreaElement).value)}
+                        onInput={(e) => handleInput(lang.id as keyof DialogueNodeData['translations'], (e.target as HTMLTextAreaElement).value)}
                         onKeyDownCapture={stopCapture}
                         onPointerDownCapture={stopCapture}
                         onMouseDownCapture={stopCapture}
