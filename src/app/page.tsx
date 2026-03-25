@@ -123,7 +123,28 @@ export default function DialogueTreeApp() {
     if (!transformRef.current) return;
     const rootNode = nodes.find(n => n.parent_id === null);
     if (rootNode) {
-      transformRef.current.zoomToElement(`tree-node-${rootNode.id}`, 1, 300);
+      const el = document.getElementById(`tree-node-${rootNode.id}`);
+      const content = transformRef.current.instance.contentComponent;
+      const wrapper = transformRef.current.instance.wrapperComponent;
+      
+      if (el && content && wrapper) {
+        const elRect = el.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        const currentScale = transformRef.current.instance.transformState.scale;
+        
+        // Calculate the element's exact center coordinates in the unscaled content area
+        const unscaledElX = (elRect.left - contentRect.left + elRect.width / 2) / currentScale;
+        const unscaledElY = (elRect.top - contentRect.top + elRect.height / 2) / currentScale;
+        
+        // Align horizontally centered and vertically at 1/4th of the screen
+        const targetScale = 1;
+        const targetX = (wrapper.offsetWidth / 2) - unscaledElX * targetScale;
+        const targetY = (wrapper.offsetHeight / 4) - unscaledElY * targetScale;
+        
+        transformRef.current.setTransform(targetX, targetY, targetScale, 300);
+      } else {
+        transformRef.current.centerView(1, 300);
+      }
     } else {
       transformRef.current.centerView(1, 300);
     }
