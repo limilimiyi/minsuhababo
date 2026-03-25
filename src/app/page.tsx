@@ -54,7 +54,7 @@ export default function DialogueTreeApp() {
         handleResetView();
       }, 200);
     }
-  }, [isLoaded, nodes]);
+  }, [isLoaded]); // nodes 의존성 제거: 타이핑 시 리셋 방지
 
   useEffect(() => {
     const channel = supabase
