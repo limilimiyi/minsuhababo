@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DialogueNodeData, NodeType } from '../types';
 
 interface DialogueNodeProps {
@@ -24,6 +24,8 @@ export default function DialogueNode({
   onToggleFold,
   visibleLangs,
 }: DialogueNodeProps) {
+  const [showCharacter, setShowCharacter] = useState(true);
+
   const stopCapture = (e: React.SyntheticEvent) => {
     e.stopPropagation();
   };
@@ -80,19 +82,21 @@ export default function DialogueNode({
            style={{ minWidth: '450px', border: `${nodeBorderWidth} solid ${nodeBorderColor}` }}
       >
         {/* Top Section */}
-        <div className={`flex justify-between items-center px-2 py-1 border-b-[3px] rounded-none ${node.is_reviewed ? 'border-green-500' : colors.border} ${colors.header}`}>
-          <input
-            type="text"
-            className={`no-pan ${colors.inputBg} border-2 border-transparent hover:${colors.border} rounded-none px-2 py-0.5 text-sm font-black w-1/3 outline-none focus:border-slate-800 text-slate-950 transition-colors`}
-            placeholder="캐릭터"
-            value={node.character_name || ''}
-            onChange={(e) => onUpdate(node.id, { character_name: e.target.value })}
-            onKeyDownCapture={stopCapture}
-            onPointerDownCapture={stopCapture}
-            onMouseDownCapture={stopCapture}
-          />
+        <div className={`flex items-center px-2 py-1 border-b-[3px] rounded-none ${node.is_reviewed ? 'border-green-500' : colors.border} ${colors.header}`}>
+          {showCharacter && (
+            <input
+              type="text"
+              className={`no-pan ${colors.inputBg} border-2 border-transparent hover:${colors.border} rounded-none px-2 py-0.5 text-sm font-black w-1/3 outline-none focus:border-slate-800 text-slate-950 transition-colors`}
+              placeholder="캐릭터"
+              value={node.character_name || ''}
+              onChange={(e) => onUpdate(node.id, { character_name: e.target.value })}
+              onKeyDownCapture={stopCapture}
+              onPointerDownCapture={stopCapture}
+              onMouseDownCapture={stopCapture}
+            />
+          )}
           
-          <div className="flex gap-1 items-center">
+          <div className="flex gap-1 items-center ml-auto">
             <button
               onClick={() => onUpdate(node.id, { is_reviewed: !node.is_reviewed })}
               className="px-1.5 py-0 rounded-none hover:bg-slate-300 bg-white border-2 border-slate-300 font-bold text-xs h-6 transition-colors text-slate-950"
@@ -161,6 +165,13 @@ export default function DialogueNode({
           title="하위 노드 추가"
         >
           ➕
+        </button>
+        <button
+          onClick={() => setShowCharacter(!showCharacter)}
+          className={`w-7 h-7 ${showCharacter ? 'bg-slate-500 hover:bg-slate-700' : 'bg-pink-500 hover:bg-pink-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white`}
+          title={showCharacter ? '캐릭터 숨기기' : '캐릭터 보이기'}
+        >
+          👤
         </button>
         {hasChildren && (
           <button
