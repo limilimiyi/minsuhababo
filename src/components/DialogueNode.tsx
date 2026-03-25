@@ -32,28 +32,26 @@ function DialogueNodeInner({
 }: DialogueNodeProps) {
   const [showCharacter, setShowCharacter] = useState(true);
   
-  // 로컬 상태: 즉각적인 피드백용
-  const [localTranslations, setLocalTranslations] = useState(node.translations);
-  const focusedLangRef = useRef<string | null>(null); // 현재 포커스된 언어 추적
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  // 입력창 참조 (직접 DOM 제어하여 IME 깨짐 방지)
+  const textRefs = {
+    kr: useRef<HTMLTextAreaElement>(null),
+    en: useRef<HTMLTextAreaElement>(null),
+    jp: useRef<HTMLTextAreaElement>(null),
+  };
+  
+  const isEditingRef = useRef<Record<string, boolean>>({});
+  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
-  // 외부 데이터 동기화 로직 개선
+  // 외부 데이터가 바뀌었을 때 처리
   useEffect(() => {
-    setLocalTranslations(prev => {
-      const next = { ...prev };
-      let hasChanged = false;
-
-      (Object.keys(node.translations) as Array<keyof typeof next>).forEach(lang => {
-        // 내가 현재 입력 중인(포커스된) 언어가 아닐 때만 외부 데이터 반영
-        if (focusedLangRef.current !== lang) {
-          if (next[lang] !== node.translations[lang]) {
-            next[lang] = node.translations[lang];
-            hasChanged = true;
-          }
+    (Object.keys(node.translations) as Array<keyof typeof textRefs>).forEach(lang => {
+      const ref = textRefs[lang].current;
+      // 현재 내가 입력 중인 칸이 아닐 때만 외부 데이터 반영
+      if (ref && !isEditingRef.current[lang]) {
+        if (ref.value !== node.translations[lang]) {
+          ref.value = node.translations[lang] || '';
         }
-      });
-
-      return hasChanged ? next : prev;
+      }
     });
   }, [node.translations]);
 
@@ -61,21 +59,25 @@ function DialogueNodeInner({
     e.stopPropagation();
   };
 
-  const handleTranslationChange = (lang: keyof DialogueNodeData['translations'], value: string) => {
-    // 1. 로컬 상태 즉시 업데이트
-    const nextTranslations = {
-      ...localTranslations,
-      [lang]: value
-    };
-    setLocalTranslations(nextTranslations);
+  const handleInput = (lang: keyof DialogueNodeData['translations'], value: string) => {
+    isEditingRef.current[lang] = true;
 
-    // 2. 서버 업데이트 디바운싱
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
+    // 서버 업데이트 디바운싱
+    if (debounceTimers.current[lang]) clearTimeout(debounceTimers.current[lang]);
+    debounceTimers.current[lang] = setTimeout(() => {
       onUpdate(node.id, {
-        translations: nextTranslations
+        translations: {
+          ...node.translations,
+          [lang]: value
+        }
       });
-    }, 400);
+      // 저장이 완료된 후 잠시 뒤에 편집 상태 해제
+      setTimeout(() => {
+        if (document.activeElement !== textRefs[lang].current) {
+          isEditingRef.current[lang] = false;
+        }
+      }, 1000);
+    }, 500);
   };
 
   const getTypeColors = () => {
@@ -91,34 +93,14 @@ function DialogueNodeInner({
 
   return (
     <div className="relative group">
-      {/* 좌측 플로팅 버튼 영역 */}
       {!isMobileMode && (
         <div className={`absolute right-[100%] top-0 mr-2 flex flex-col gap-1 z-20 transition-all duration-200 ${isSelected ? 'opacity-100 visible' : 'opacity-0 invisible lg:group-hover:opacity-100 lg:group-hover:visible'}`}>
-          <button
-            onClick={() => onUpdate(node.id, { type: 'dialogue' })}
-            className={`w-7 h-7 ${node.type === 'dialogue' ? 'bg-slate-800 scale-110 z-10' : 'bg-slate-400 hover:bg-slate-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
-            title="일반 대사"
-          >
-            📝
-          </button>
-          <button
-            onClick={() => onUpdate(node.id, { type: 'question' })}
-            className={`w-7 h-7 ${node.type === 'question' ? 'bg-blue-600 scale-110 z-10' : 'bg-slate-400 hover:bg-blue-500'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
-            title="질문"
-          >
-            ❓
-          </button>
-          <button
-            onClick={() => onUpdate(node.id, { type: 'choice' })}
-            className={`w-7 h-7 ${node.type === 'choice' ? 'bg-orange-500 scale-110 z-10' : 'bg-slate-400 hover:bg-orange-400'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
-            title="선택지"
-          >
-            🔀
-          </button>
+          <button onClick={() => onUpdate(node.id, { type: 'dialogue' })} className={`w-7 h-7 ${node.type === 'dialogue' ? 'bg-slate-800 scale-110 z-10' : 'bg-slate-400 hover:bg-slate-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}>📝</button>
+          <button onClick={() => onUpdate(node.id, { type: 'question' })} className={`w-7 h-7 ${node.type === 'question' ? 'bg-blue-600 scale-110 z-10' : 'bg-slate-400 hover:bg-blue-500'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}>❓</button>
+          <button onClick={() => onUpdate(node.id, { type: 'choice' })} className={`w-7 h-7 ${node.type === 'choice' ? 'bg-orange-500 scale-110 z-10' : 'bg-slate-400 hover:bg-orange-400'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}>🔀</button>
         </div>
       )}
 
-      {/* 본체 노드 */}
       <div 
         className={`tree-node-content relative flex flex-col z-10 rounded-none ${colors.bg} ${isMobileMode ? 'w-full' : 'w-[320px] md:w-[450px] shrink-0 max-w-[95vw]'} shadow-sm transition-all duration-200 cursor-default ${isSelected && !isMobileMode ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}
         style={{ border: `${nodeBorderWidth} solid ${nodeBorderColor}` }}
@@ -133,8 +115,8 @@ function DialogueNodeInner({
               type="text"
               className={`no-pan ${colors.inputBg} border-2 border-transparent hover:${colors.border} rounded-none px-2 py-0.5 text-sm font-black w-1/3 outline-none focus:border-slate-800 text-slate-950 transition-colors`}
               placeholder="캐릭터"
-              value={node.character_name || ''}
-              onChange={(e) => onUpdate(node.id, { character_name: e.target.value })}
+              defaultValue={node.character_name || ''}
+              onBlur={(e) => onUpdate(node.id, { character_name: e.target.value })}
               onKeyDownCapture={stopCapture}
               onPointerDownCapture={stopCapture}
               onMouseDownCapture={stopCapture}
@@ -142,21 +124,8 @@ function DialogueNodeInner({
           )}
           
           <div className="flex gap-1 items-center ml-auto">
-            <button
-              onClick={() => onUpdate(node.id, { is_reviewed: !node.is_reviewed })}
-              className="px-1.5 py-0 rounded-none hover:bg-slate-300 bg-white border-2 border-slate-300 font-bold text-xs h-6 transition-colors text-slate-950"
-            >
-              ✅
-            </button>
-            {!isRoot && (
-              <button
-                onClick={() => onDelete(node.id)}
-                className="px-1.5 py-0 rounded-none hover:bg-red-200 bg-white border-2 border-slate-300 font-bold text-xs h-6 transition-colors text-slate-950"
-                title="대사 삭제"
-              >
-                ❌
-              </button>
-            )}
+            <button onClick={() => onUpdate(node.id, { is_reviewed: !node.is_reviewed })} className="px-1.5 py-0 rounded-none hover:bg-slate-300 bg-white border-2 border-slate-300 font-bold text-xs h-6 transition-colors text-slate-950">✅</button>
+            {!isRoot && <button onClick={() => onDelete(node.id)} className="px-1.5 py-0 rounded-none hover:bg-red-200 bg-white border-2 border-slate-300 font-bold text-xs h-6 transition-colors text-slate-950">❌</button>}
           </div>
         </div>
 
@@ -173,25 +142,26 @@ function DialogueNodeInner({
                   <td className="py-0">
                     <div className="flex gap-1 items-stretch">
                       <textarea
+                        ref={textRefs[lang.id as keyof typeof textRefs]}
                         rows={1}
                         className="no-pan flex-1 border-2 border-slate-200 rounded-none p-1 text-xs resize-y bg-white outline-none focus:border-slate-800 transition-colors block font-medium text-slate-950"
-                        value={localTranslations[lang.id as keyof DialogueNodeData['translations']] || ''}
-                        onFocus={() => { focusedLangRef.current = lang.id; }}
-                        onBlur={() => { focusedLangRef.current = null; }}
-                        onChange={(e) => handleTranslationChange(lang.id as keyof DialogueNodeData['translations'], e.target.value)}
+                        defaultValue={node.translations[lang.id as keyof DialogueNodeData['translations']] || ''}
+                        onFocus={() => { isEditingRef.current[lang.id] = true; }}
+                        onBlur={(e) => { 
+                          isEditingRef.current[lang.id] = false;
+                          onUpdate(node.id, { translations: { ...node.translations, [lang.id]: e.target.value } });
+                        }}
+                        onInput={(e) => handleInput(lang.id as keyof DialogueNodeData['translations'], (e.target as HTMLTextAreaElement).value)}
                         onKeyDownCapture={stopCapture}
                         onPointerDownCapture={stopCapture}
                         onMouseDownCapture={stopCapture}
                       />
                       <button
                         onClick={() => {
-                          const text = localTranslations[lang.id as keyof DialogueNodeData['translations']] || '';
-                          if (text) {
-                            navigator.clipboard.writeText(text).catch(() => {});
-                          }
+                          const text = textRefs[lang.id as keyof typeof textRefs].current?.value || '';
+                          if (text) navigator.clipboard.writeText(text).catch(() => {});
                         }}
                         className="w-7 flex-shrink-0 border-2 border-slate-200 bg-slate-50 hover:bg-slate-200 flex items-center justify-center transition-colors text-sm text-slate-600 outline-none focus:border-slate-800"
-                        title="복사 (Copy)"
                       >
                         📋
                       </button>
@@ -204,32 +174,11 @@ function DialogueNodeInner({
         </div>
       </div>
 
-      {/* 우측 플로팅 버튼 영역 */}
       {!isMobileMode && (
         <div className={`absolute left-[100%] top-0 ml-2 flex flex-col gap-1 z-20 transition-all duration-200 ${isSelected ? 'opacity-100 visible' : 'opacity-0 invisible lg:group-hover:opacity-100 lg:group-hover:visible'}`}>
-          <button
-            onClick={() => onAddChild(node.id, 'dialogue')}
-            className="w-7 h-7 bg-slate-800 hover:bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white"
-            title="하위 대사 추가"
-          >
-            ➕
-          </button>
-          <button
-            onClick={() => setShowCharacter(!showCharacter)}
-            className={`w-7 h-7 ${showCharacter ? 'bg-slate-500 hover:bg-slate-700' : 'bg-pink-500 hover:bg-pink-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white`}
-            title={showCharacter ? '캐릭터 숨기기' : '캐릭터 보이기'}
-          >
-            👤
-          </button>
-          {hasChildren && (
-            <button
-              onClick={() => onToggleFold(node.id)}
-              className="w-7 h-7 bg-slate-600 hover:bg-slate-700 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white"
-              title={isFolded ? "펼치기" : "접기"}
-            >
-              {isFolded ? `🙈` : `👁️`}
-            </button>
-          )}
+          <button onClick={() => onAddChild(node.id, 'dialogue')} className="w-7 h-7 bg-slate-800 hover:bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white">➕</button>
+          <button onClick={() => setShowCharacter(!showCharacter)} className={`w-7 h-7 ${showCharacter ? 'bg-slate-500 hover:bg-slate-700' : 'bg-pink-500 hover:bg-pink-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white`}>👤</button>
+          {hasChildren && <button onClick={() => onToggleFold(node.id)} className="w-7 h-7 bg-slate-600 hover:bg-slate-700 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white">{isFolded ? `🙈` : `👁️`}</button>}
         </div>
       )}
     </div>
