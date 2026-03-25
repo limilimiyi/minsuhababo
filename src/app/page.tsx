@@ -206,7 +206,7 @@ export default function DialogueTreeApp() {
               <button onClick={() => transformRef.current?.zoomOut()} className="w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm" title="축소(Zoom Out)">➖</button>
               <button onClick={() => transformRef.current?.centerView(1, 300)} className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-xl flex items-center justify-center transition-all active:scale-90 shadow-lg mt-2" title="화면 중앙 정렬(Reset View)">🏠</button>
             </div>
-            <TransformWrapper ref={transformRef} initialScale={1} centerOnInit={true} limitToBounds={false} doubleClick={{ disabled: true }} panning={{ excluded: ["input", "textarea", "select", "button", "no-pan"] }}>
+            <TransformWrapper ref={transformRef} initialScale={1} minScale={0.1} maxScale={4} centerOnInit={true} limitToBounds={false} doubleClick={{ disabled: true }} panning={{ excluded: ["input", "textarea", "select", "button", "no-pan"] }}>
               <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "auto", height: "auto" }}>
                 <div className="p-[500px] inline-flex flex-col items-center">{renderTree(null)}</div>
               </TransformComponent>
