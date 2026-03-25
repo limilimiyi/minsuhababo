@@ -107,8 +107,9 @@ export default function DialogueNode({
               <button
                 onClick={() => onDelete(node.id)}
                 className="px-1.5 py-0 rounded-none hover:bg-red-200 bg-white border-2 border-slate-300 font-bold text-xs h-6 transition-colors text-slate-950"
+                title="대사 삭제"
               >
-                🗑️
+                ❌
               </button>
             )}
           </div>

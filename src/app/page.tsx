@@ -247,7 +247,7 @@ export default function DialogueTreeApp() {
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👤</span> <span>캐릭터 칸 숨기기 / Toggle Character / キャラクタートグル</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👁️</span> <span>하위 대사 접기 / Fold Lines / 折りたたむ・展開</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">✅</span> <span>검토 완료 / Review Complete / 確認完了</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🗑️</span> <span>대사 삭제 / Delete / セリフ削除</span></li>
+                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">❌</span> <span>대사 삭제 / Delete / セリフ削除</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">📋</span> <span>텍스트 복사 / Copy Text / テキストをコピー</span></li>
                 <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🏠</span> <span>최초 대사로 이동 / Reset View / 視点をリセット</span></li>
               </ul>
