@@ -32,17 +32,29 @@ function DialogueNodeInner({
 }: DialogueNodeProps) {
   const [showCharacter, setShowCharacter] = useState(true);
   
-  // 로컬 상태: 타이핑 딜레이 방지
+  // 로컬 상태: 즉각적인 피드백용
   const [localTranslations, setLocalTranslations] = useState(node.translations);
+  const focusedLangRef = useRef<string | null>(null); // 현재 포커스된 언어 추적
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
-  const isTypingRef = useRef<Record<string, boolean>>({});
 
-  // 외부(DB/Realtime) 데이터 동기화: 타이핑 중이 아닐 때만 업데이트
+  // 외부 데이터 동기화 로직 개선
   useEffect(() => {
-    const isAnyTyping = Object.values(isTypingRef.current).some(v => v);
-    if (!isAnyTyping) {
-      setLocalTranslations(node.translations);
-    }
+    setLocalTranslations(prev => {
+      const next = { ...prev };
+      let hasChanged = false;
+
+      (Object.keys(node.translations) as Array<keyof typeof next>).forEach(lang => {
+        // 내가 현재 입력 중인(포커스된) 언어가 아닐 때만 외부 데이터 반영
+        if (focusedLangRef.current !== lang) {
+          if (next[lang] !== node.translations[lang]) {
+            next[lang] = node.translations[lang];
+            hasChanged = true;
+          }
+        }
+      });
+
+      return hasChanged ? next : prev;
+    });
   }, [node.translations]);
 
   const stopCapture = (e: React.SyntheticEvent) => {
@@ -50,23 +62,19 @@ function DialogueNodeInner({
   };
 
   const handleTranslationChange = (lang: keyof DialogueNodeData['translations'], value: string) => {
-    isTypingRef.current[lang] = true;
-    
+    // 1. 로컬 상태 즉시 업데이트
     const nextTranslations = {
       ...localTranslations,
       [lang]: value
     };
     setLocalTranslations(nextTranslations);
 
+    // 2. 서버 업데이트 디바운싱
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       onUpdate(node.id, {
         translations: nextTranslations
       });
-      // 저장 완료 후 잠시 뒤에 타이핑 상태 해제 (응답 지연 고려)
-      setTimeout(() => {
-        isTypingRef.current[lang] = false;
-      }, 500);
     }, 400);
   };
 
@@ -168,6 +176,8 @@ function DialogueNodeInner({
                         rows={1}
                         className="no-pan flex-1 border-2 border-slate-200 rounded-none p-1 text-xs resize-y bg-white outline-none focus:border-slate-800 transition-colors block font-medium text-slate-950"
                         value={localTranslations[lang.id as keyof DialogueNodeData['translations']] || ''}
+                        onFocus={() => { focusedLangRef.current = lang.id; }}
+                        onBlur={() => { focusedLangRef.current = null; }}
                         onChange={(e) => handleTranslationChange(lang.id as keyof DialogueNodeData['translations'], e.target.value)}
                         onKeyDownCapture={stopCapture}
                         onPointerDownCapture={stopCapture}

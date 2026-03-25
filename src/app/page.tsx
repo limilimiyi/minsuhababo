@@ -167,12 +167,7 @@ export default function DialogueTreeApp() {
 
   const handleUpdateNode = useCallback(async (id: string, updates: Partial<DialogueNodeData>) => {
     setNodes(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
-
-    if (pendingUpdates.current[id]) clearTimeout(pendingUpdates.current[id]);
-    pendingUpdates.current[id] = setTimeout(async () => {
-      await supabase.from('nodes').update(updates).eq('id', id);
-      delete pendingUpdates.current[id];
-    }, 400);
+    await supabase.from('nodes').update(updates).eq('id', id);
   }, []);
 
   const handleAddChild = useCallback(async (parent_id: string, type: NodeType) => {
