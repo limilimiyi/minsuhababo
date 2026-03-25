@@ -278,30 +278,77 @@ export default function DialogueTreeApp() {
         {!isLoaded ? (
           <div className="h-full w-full flex items-center justify-center text-white font-black text-2xl animate-pulse tracking-widest bg-slate-800 z-50">SYNCING...</div>
         ) : isMobileView ? (
-          <div className="h-full w-full relative flex flex-col items-center justify-center pb-20">
+          <div className="h-full w-full relative flex flex-col items-center justify-center p-4 overflow-y-auto pb-32">
             {(() => {
-              const currentFocusedNode = nodes.find(n => n.id === focusedNodeId) || nodes.find(n => n.parent_id === null);
-              if (!currentFocusedNode) return <div className="text-white font-bold">노드가 없습니다.</div>;
+              const rootNode = nodes.find(n => n.parent_id === null) || INITIAL_NODE;
+              const currentFocusedNode = nodes.find(n => n.id === focusedNodeId) || rootNode;
+              
+              if (!currentFocusedNode) return (
+                <div className="flex flex-col items-center justify-center h-full text-white gap-4">
+                  <p className="font-bold">데이터를 불러오는 중이거나 노드가 없습니다.</p>
+                  <button onClick={() => setNodes([INITIAL_NODE])} className="px-4 py-2 bg-blue-600 rounded">초기화</button>
+                </div>
+              );
+
               const childrenNodes = nodes.filter(n => n.parent_id === currentFocusedNode.id);
               return (
-                <>
-                  <button disabled={currentFocusedNode.parent_id === null} onClick={() => setFocusedNodeId(currentFocusedNode.parent_id)} className={`absolute left-2 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full font-black text-2xl transition-all z-10 ${currentFocusedNode.parent_id === null ? 'bg-slate-700/50 text-slate-500' : 'bg-white/90 text-slate-800 shadow-xl active:scale-90'}`}>{'<'}</button>
-                  <div className="w-[85vw] max-w-[400px]">
-                    <DialogueNode node={currentFocusedNode} isRoot={currentFocusedNode.parent_id === null} onUpdate={handleUpdateNode} onAddChild={handleAddChild} onDelete={handleDeleteNode} isFolded={false} hasChildren={childrenNodes.length > 0} onToggleFold={() => {}} visibleLangs={visibleLangs} isSelected={true} onSelect={() => {}} isMobileMode={true} />
+                <div className="flex flex-col items-center gap-8 w-full">
+                  {/* 부모 노드로 이동 (위쪽) */}
+                  <div className="h-16 flex items-center justify-center">
+                    <button 
+                      disabled={currentFocusedNode.parent_id === null} 
+                      onClick={() => setFocusedNodeId(currentFocusedNode.parent_id)} 
+                      className={`w-12 h-12 flex items-center justify-center rounded-full font-black text-2xl transition-all shadow-xl ${currentFocusedNode.parent_id === null ? 'bg-slate-700/30 text-slate-500 cursor-not-allowed' : 'bg-white text-slate-800 active:scale-90 hover:bg-blue-50'}`}
+                      title="이전 대사로 (부모 노드)"
+                    >
+                      ↑
+                    </button>
                   </div>
-                  <div className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-10 w-12">
+
+                  {/* 현재 선택된 노드 */}
+                  <div className="w-full max-w-[450px]">
+                    <DialogueNode 
+                      node={currentFocusedNode} 
+                      isRoot={currentFocusedNode.parent_id === null} 
+                      onUpdate={handleUpdateNode} 
+                      onAddChild={handleAddChild} 
+                      onDelete={handleDeleteNode} 
+                      isFolded={false} 
+                      hasChildren={childrenNodes.length > 0} 
+                      onToggleFold={() => {}} 
+                      visibleLangs={visibleLangs} 
+                      isSelected={true} 
+                      onSelect={() => {}} 
+                      isMobileMode={true} 
+                    />
+                  </div>
+
+                  {/* 자식 노드들로 이동 (아래쪽) */}
+                  <div className="flex flex-wrap justify-center gap-4 w-full px-4 min-h-[80px]">
                     {childrenNodes.length === 0 ? (
-                      <button disabled className="w-12 h-12 flex items-center justify-center rounded-full font-black text-2xl bg-slate-700/50 text-slate-500">{'>'}</button>
+                      <div className="text-slate-400 text-sm font-bold flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-slate-700/30 flex items-center justify-center text-slate-500">↓</div>
+                        <span>마지막 대사입니다</span>
+                      </div>
                     ) : (
                       childrenNodes.map((child, i) => (
-                        <div key={child.id} className="relative group flex justify-end">
-                          {childrenNodes.length > 1 && <span className="absolute right-14 top-1/2 -translate-y-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap shadow-lg font-bold">{child.type === 'choice' ? '선택지' : `자식 ${i + 1}`}</span>}
-                          <button onClick={() => setFocusedNodeId(child.id)} className="w-12 h-12 shrink-0 flex items-center justify-center rounded-full font-black text-2xl bg-white/90 text-slate-800 shadow-xl transition-all active:scale-90">{'>'}</button>
+                        <div key={child.id} className="flex flex-col items-center gap-2">
+                          <span className="bg-slate-800 text-white text-[10px] px-2 py-0.5 rounded shadow-lg font-bold">
+                            {child.type === 'choice' ? '선택지' : child.type === 'question' ? '질문' : `대사 ${i + 1}`}
+                          </span>
+                          <button 
+                            onClick={() => setFocusedNodeId(child.id)} 
+                            className="w-12 h-12 flex items-center justify-center rounded-full font-black text-2xl bg-white text-slate-800 shadow-xl transition-all active:scale-90 hover:bg-emerald-50"
+                          >
+                            ↓
+                          </button>
                         </div>
                       ))
                     )}
                   </div>
-                  <div className="fixed bottom-0 left-0 w-full bg-slate-800 border-t border-slate-700 text-white p-3 flex justify-between items-center shadow-2xl z-50 px-4 md:px-8">
+
+                  {/* 하단 편집 도구바 (Fixed) */}
+                  <div className="fixed bottom-0 left-0 w-full bg-slate-900 border-t border-slate-700 text-white p-4 flex justify-between items-center shadow-2xl z-50 px-6">
                     <div className="flex gap-2">
                       <button onClick={() => handleUpdateNode(currentFocusedNode.id, { type: 'dialogue' })} className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${currentFocusedNode.type === 'dialogue' ? 'bg-slate-500' : 'bg-slate-700 hover:bg-slate-600'}`}>📝</button>
                       <button onClick={() => handleUpdateNode(currentFocusedNode.id, { type: 'question' })} className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${currentFocusedNode.type === 'question' ? 'bg-blue-600' : 'bg-slate-700 hover:bg-blue-600'}`}>❓</button>
@@ -313,7 +360,7 @@ export default function DialogueTreeApp() {
                       {currentFocusedNode.parent_id !== null && <button onClick={() => handleDeleteNode(currentFocusedNode.id)} className="w-10 h-10 rounded-lg bg-red-600/80 hover:bg-red-500 flex items-center justify-center text-lg">❌</button>}
                     </div>
                   </div>
-                </>
+                </div>
               );
             })()}
           </div>
