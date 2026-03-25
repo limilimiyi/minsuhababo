@@ -22,6 +22,8 @@ export default function DialogueTreeApp() {
   const [foldedNodes, setFoldedNodes] = useState<Set<string>>(new Set()); // 접힌 노드 ID들
   const [visibleLangs, setVisibleLangs] = useState({ kr: true, en: true, jp: true });
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const [isMobileView, setIsMobileView] = useState(false);
   const transformRef = useRef<any>(null);
   const pendingUpdates = useRef<Record<string, any>>({});
 
@@ -71,6 +73,13 @@ export default function DialogueTreeApp() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileView(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleUpdateNode = useCallback(async (id: string, updates: Partial<DialogueNodeData>) => {
@@ -231,6 +240,7 @@ export default function DialogueTreeApp() {
               </button>
             ))}
           </div>
+          <button onClick={() => setIsMobileView(!isMobileView)} className="p-1 md:px-3 md:py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-lg md:text-sm shadow-lg transition-all active:scale-95 flex items-center justify-center" title="모바일 뷰 전환">{isMobileView ? "💻" : "📱"}</button>
           <button onClick={handleResetView} className="p-2 md:px-4 md:py-2 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">🏠</button>
           
           <div className="relative group flex items-center ml-1 md:ml-2">
@@ -267,6 +277,46 @@ export default function DialogueTreeApp() {
       <div className="flex-1 relative bg-slate-600" style={{ backgroundImage: 'radial-gradient(#475569 2px, transparent 2px)', backgroundSize: '40px 40px' }}>
         {!isLoaded ? (
           <div className="h-full w-full flex items-center justify-center text-white font-black text-2xl animate-pulse tracking-widest bg-slate-800 z-50">SYNCING...</div>
+        ) : isMobileView ? (
+          <div className="h-full w-full relative flex flex-col items-center justify-center pb-20">
+            {(() => {
+              const currentFocusedNode = nodes.find(n => n.id === focusedNodeId) || nodes.find(n => n.parent_id === null);
+              if (!currentFocusedNode) return <div className="text-white font-bold">노드가 없습니다.</div>;
+              const childrenNodes = nodes.filter(n => n.parent_id === currentFocusedNode.id);
+              return (
+                <>
+                  <button disabled={currentFocusedNode.parent_id === null} onClick={() => setFocusedNodeId(currentFocusedNode.parent_id)} className={`absolute left-2 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full font-black text-2xl transition-all z-10 ${currentFocusedNode.parent_id === null ? 'bg-slate-700/50 text-slate-500' : 'bg-white/90 text-slate-800 shadow-xl active:scale-90'}`}>{'<'}</button>
+                  <div className="w-[85vw] max-w-[400px]">
+                    <DialogueNode node={currentFocusedNode} isRoot={currentFocusedNode.parent_id === null} onUpdate={handleUpdateNode} onAddChild={handleAddChild} onDelete={handleDeleteNode} isFolded={false} hasChildren={childrenNodes.length > 0} onToggleFold={() => {}} visibleLangs={visibleLangs} isSelected={true} onSelect={() => {}} isMobileMode={true} />
+                  </div>
+                  <div className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-10 w-12">
+                    {childrenNodes.length === 0 ? (
+                      <button disabled className="w-12 h-12 flex items-center justify-center rounded-full font-black text-2xl bg-slate-700/50 text-slate-500">{'>'}</button>
+                    ) : (
+                      childrenNodes.map((child, i) => (
+                        <div key={child.id} className="relative group flex justify-end">
+                          {childrenNodes.length > 1 && <span className="absolute right-14 top-1/2 -translate-y-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap shadow-lg font-bold">{child.type === 'choice' ? '선택지' : `자식 ${i + 1}`}</span>}
+                          <button onClick={() => setFocusedNodeId(child.id)} className="w-12 h-12 shrink-0 flex items-center justify-center rounded-full font-black text-2xl bg-white/90 text-slate-800 shadow-xl transition-all active:scale-90">{'>'}</button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="fixed bottom-0 left-0 w-full bg-slate-800 border-t border-slate-700 text-white p-3 flex justify-between items-center shadow-2xl z-50 px-4 md:px-8">
+                    <div className="flex gap-2">
+                      <button onClick={() => handleUpdateNode(currentFocusedNode.id, { type: 'dialogue' })} className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${currentFocusedNode.type === 'dialogue' ? 'bg-slate-500' : 'bg-slate-700 hover:bg-slate-600'}`}>📝</button>
+                      <button onClick={() => handleUpdateNode(currentFocusedNode.id, { type: 'question' })} className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${currentFocusedNode.type === 'question' ? 'bg-blue-600' : 'bg-slate-700 hover:bg-blue-600'}`}>❓</button>
+                      <button onClick={() => handleUpdateNode(currentFocusedNode.id, { type: 'choice' })} className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${currentFocusedNode.type === 'choice' ? 'bg-orange-600' : 'bg-slate-700 hover:bg-orange-600'}`}>🔀</button>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleAddChild(currentFocusedNode.id, 'dialogue')} className="w-10 h-10 rounded-lg bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-lg shadow-lg">➕</button>
+                      <button onClick={() => handleUpdateNode(currentFocusedNode.id, { is_reviewed: !currentFocusedNode.is_reviewed })} className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${currentFocusedNode.is_reviewed ? 'bg-green-600' : 'bg-slate-700 hover:bg-slate-600'}`}>✅</button>
+                      {currentFocusedNode.parent_id !== null && <button onClick={() => handleDeleteNode(currentFocusedNode.id)} className="w-10 h-10 rounded-lg bg-red-600/80 hover:bg-red-500 flex items-center justify-center text-lg">❌</button>}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
         ) : (
           <>
             <div className="fixed right-4 bottom-4 md:right-8 md:bottom-8 flex flex-col gap-1 md:gap-2 bg-white/90 backdrop-blur-sm p-2 md:p-3 rounded-xl md:rounded-2xl shadow-2xl border-2 md:border-4 border-slate-300" style={{ zIndex: 9999 }}>

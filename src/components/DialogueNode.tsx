@@ -13,6 +13,7 @@ interface DialogueNodeProps {
   visibleLangs: { kr: boolean; en: boolean; jp: boolean };
   isSelected: boolean;
   onSelect: (id: string) => void;
+  isMobileMode?: boolean;
 }
 
 export default function DialogueNode({
@@ -27,6 +28,7 @@ export default function DialogueNode({
   visibleLangs,
   isSelected,
   onSelect,
+  isMobileMode = false,
 }: DialogueNodeProps) {
   const [showCharacter, setShowCharacter] = useState(true);
 
@@ -56,9 +58,10 @@ export default function DialogueNode({
 
   return (
     <div className="relative group">
-      {/* 좌측 플로팅 버튼 영역 (타입 선택) */}
-      <div className={`absolute right-[100%] top-0 mr-2 flex flex-col gap-1 z-20 transition-all duration-200 ${isSelected ? 'opacity-100 visible' : 'opacity-0 invisible lg:group-hover:opacity-100 lg:group-hover:visible'}`}>
-        <button
+      {/* 좌측 플로팅 버튼 영역 (타입 선택) - 모바일 뷰일 경우 숨김 */}
+      {!isMobileMode && (
+        <div className={`absolute right-[100%] top-0 mr-2 flex flex-col gap-1 z-20 transition-all duration-200 ${isSelected ? 'opacity-100 visible' : 'opacity-0 invisible lg:group-hover:opacity-100 lg:group-hover:visible'}`}>
+          <button
           onClick={() => onUpdate(node.id, { type: 'dialogue' })}
           className={`w-7 h-7 ${node.type === 'dialogue' ? 'bg-slate-800 scale-110 z-10' : 'bg-slate-400 hover:bg-slate-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
           title="일반 대사"
@@ -80,13 +83,14 @@ export default function DialogueNode({
           🔀
         </button>
       </div>
+      )}
 
       {/* 본체 노드 */}
-      <div className={`tree-node-content relative flex flex-col z-10 rounded-none ${colors.bg} w-[320px] md:w-[450px] shrink-0 max-w-[95vw] shadow-sm transition-all duration-200 cursor-default ${isSelected ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}
+      <div className={`tree-node-content relative flex flex-col z-10 rounded-none ${colors.bg} ${isMobileMode ? 'w-full' : 'w-[320px] md:w-[450px] shrink-0 max-w-[95vw]'} shadow-sm transition-all duration-200 cursor-default ${isSelected && !isMobileMode ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}
            style={{ border: `${nodeBorderWidth} solid ${nodeBorderColor}` }}
            onClick={(e) => {
              onSelect(node.id);
-             e.stopPropagation();
+             if (!isMobileMode) e.stopPropagation();
            }}
       >
         {/* Top Section */}
@@ -166,9 +170,10 @@ export default function DialogueNode({
         </div>
       </div>
 
-      {/* 우측 플로팅 버튼 영역 */}
-      <div className={`absolute left-[100%] top-0 ml-2 flex flex-col gap-1 z-20 transition-all duration-200 ${isSelected ? 'opacity-100 visible' : 'opacity-0 invisible lg:group-hover:opacity-100 lg:group-hover:visible'}`}>
-        <button
+      {/* 우측 플로팅 버튼 영역 - 모바일 뷰일 경우 숨김 */}
+      {!isMobileMode && (
+        <div className={`absolute left-[100%] top-0 ml-2 flex flex-col gap-1 z-20 transition-all duration-200 ${isSelected ? 'opacity-100 visible' : 'opacity-0 invisible lg:group-hover:opacity-100 lg:group-hover:visible'}`}>
+          <button
           onClick={() => onAddChild(node.id, 'dialogue')}
           className="w-7 h-7 bg-slate-800 hover:bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white"
           title="하위 대사 추가"
@@ -191,7 +196,8 @@ export default function DialogueNode({
             {isFolded ? `🙈` : `👁️`}
           </button>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
