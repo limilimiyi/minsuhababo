@@ -21,6 +21,7 @@ export default function DialogueTreeApp() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [foldedNodes, setFoldedNodes] = useState<Set<string>>(new Set()); // 접힌 노드 ID들
   const [visibleLangs, setVisibleLangs] = useState({ kr: true, en: true, jp: true });
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const transformRef = useRef<any>(null);
   const pendingUpdates = useRef<Record<string, any>>({});
 
@@ -176,6 +177,8 @@ export default function DialogueTreeApp() {
                 hasChildren={hasChildren}
                 onToggleFold={() => toggleFold(node.id)}
                 visibleLangs={visibleLangs}
+                isSelected={selectedNodeId === node.id}
+                onSelect={(id) => setSelectedNodeId(id)}
               />
               {!isFolded && renderTree(node.id, depth + 1)}
             </div>
@@ -191,7 +194,10 @@ export default function DialogueTreeApp() {
         .tree-container { display: flex; flex-direction: column; align-items: center; }
         .tree-children { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; position: relative; margin-top: 24px; }
         .tree-children::before { content: ''; position: absolute; top: -24px; left: 50%; width: 4px; height: 24px; background-color: #cbd5e1; transform: translateX(-50%); }
-        .tree-node-wrapper { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 60px; padding-top: 24px; }
+        .tree-node-wrapper { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 16px; padding-top: 24px; }
+        @media (min-width: 768px) {
+          .tree-node-wrapper { padding: 0 60px; padding-top: 24px; }
+        }
         .tree-node-wrapper::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background-color: #cbd5e1; }
         .tree-node-wrapper::after { content: ''; position: absolute; top: 0; left: 50%; width: 4px; height: 24px; background-color: #cbd5e1; transform: translateX(-50%); }
         .tree-node-wrapper:only-child::before { display: none; }
@@ -270,7 +276,12 @@ export default function DialogueTreeApp() {
             </div>
             <TransformWrapper ref={transformRef} initialScale={1} minScale={0.1} maxScale={4} centerOnInit={true} limitToBounds={false} doubleClick={{ disabled: true }} panning={{ excluded: ["input", "textarea", "select", "button", "no-pan"] }}>
               <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "auto", height: "auto" }}>
-                <div className="p-[500px] inline-flex flex-col items-center">{renderTree(null)}</div>
+                <div 
+                  className="p-[100px] md:p-[500px] inline-flex flex-col items-center"
+                  onClick={() => setSelectedNodeId(null)}
+                >
+                  {renderTree(null)}
+                </div>
               </TransformComponent>
             </TransformWrapper>
           </>
