@@ -204,14 +204,14 @@ export default function DialogueTreeApp() {
     }
   }, []);
 
-  const toggleFold = (id: string) => {
+  const toggleFold = useCallback((id: string) => {
     setFoldedNodes(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
+  }, []);
 
   const handleResetView = useCallback(() => {
     if (!transformRef.current) return;
@@ -267,10 +267,10 @@ export default function DialogueTreeApp() {
                 onDelete={handleDeleteNode}
                 isFolded={isFolded}
                 hasChildren={hasChildren}
-                onToggleFold={() => toggleFold(node.id)}
+                onToggleFold={toggleFold}
                 visibleLangs={visibleLangs}
                 isSelected={selectedNodeId === node.id}
-                onSelect={(id) => setSelectedNodeId(id)}
+                onSelect={setSelectedNodeId}
               />
               {!isFolded && renderTree(node.id, depth + 1)}
             </div>

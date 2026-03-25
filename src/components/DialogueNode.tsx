@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { DialogueNodeData, NodeType } from '../types';
 
 interface DialogueNodeProps {
@@ -9,14 +9,14 @@ interface DialogueNodeProps {
   onDelete: (id: string) => void;
   isFolded: boolean;
   hasChildren: boolean;
-  onToggleFold: () => void;
+  onToggleFold: (id: string) => void;
   visibleLangs: { kr: boolean; en: boolean; jp: boolean };
   isSelected: boolean;
   onSelect: (id: string) => void;
   isMobileMode?: boolean;
 }
 
-export default function DialogueNode({
+function DialogueNodeInner({
   node,
   isRoot,
   onUpdate,
@@ -31,18 +31,43 @@ export default function DialogueNode({
   isMobileMode = false,
 }: DialogueNodeProps) {
   const [showCharacter, setShowCharacter] = useState(true);
+  
+  // 로컬 상태: 타이핑 딜레이 방지
+  const [localTranslations, setLocalTranslations] = useState(node.translations);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef<Record<string, boolean>>({});
+
+  // 외부(DB/Realtime) 데이터 동기화: 타이핑 중이 아닐 때만 업데이트
+  useEffect(() => {
+    const isAnyTyping = Object.values(isTypingRef.current).some(v => v);
+    if (!isAnyTyping) {
+      setLocalTranslations(node.translations);
+    }
+  }, [node.translations]);
 
   const stopCapture = (e: React.SyntheticEvent) => {
     e.stopPropagation();
   };
 
   const handleTranslationChange = (lang: keyof DialogueNodeData['translations'], value: string) => {
-    onUpdate(node.id, {
-      translations: {
-        ...node.translations,
-        [lang]: value
-      }
-    });
+    isTypingRef.current[lang] = true;
+    
+    const nextTranslations = {
+      ...localTranslations,
+      [lang]: value
+    };
+    setLocalTranslations(nextTranslations);
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      onUpdate(node.id, {
+        translations: nextTranslations
+      });
+      // 저장 완료 후 잠시 뒤에 타이핑 상태 해제 (응답 지연 고려)
+      setTimeout(() => {
+        isTypingRef.current[lang] = false;
+      }, 500);
+    }, 400);
   };
 
   const getTypeColors = () => {
@@ -58,42 +83,42 @@ export default function DialogueNode({
 
   return (
     <div className="relative group">
-      {/* 좌측 플로팅 버튼 영역 (타입 선택) - 모바일 뷰일 경우 숨김 */}
+      {/* 좌측 플로팅 버튼 영역 */}
       {!isMobileMode && (
         <div className={`absolute right-[100%] top-0 mr-2 flex flex-col gap-1 z-20 transition-all duration-200 ${isSelected ? 'opacity-100 visible' : 'opacity-0 invisible lg:group-hover:opacity-100 lg:group-hover:visible'}`}>
           <button
-          onClick={() => onUpdate(node.id, { type: 'dialogue' })}
-          className={`w-7 h-7 ${node.type === 'dialogue' ? 'bg-slate-800 scale-110 z-10' : 'bg-slate-400 hover:bg-slate-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
-          title="일반 대사"
-        >
-          📝
-        </button>
-        <button
-          onClick={() => onUpdate(node.id, { type: 'question' })}
-          className={`w-7 h-7 ${node.type === 'question' ? 'bg-blue-600 scale-110 z-10' : 'bg-slate-400 hover:bg-blue-500'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
-          title="질문"
-        >
-          ❓
-        </button>
-        <button
-          onClick={() => onUpdate(node.id, { type: 'choice' })}
-          className={`w-7 h-7 ${node.type === 'choice' ? 'bg-orange-500 scale-110 z-10' : 'bg-slate-400 hover:bg-orange-400'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
-          title="선택지"
-        >
-          🔀
-        </button>
-      </div>
+            onClick={() => onUpdate(node.id, { type: 'dialogue' })}
+            className={`w-7 h-7 ${node.type === 'dialogue' ? 'bg-slate-800 scale-110 z-10' : 'bg-slate-400 hover:bg-slate-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
+            title="일반 대사"
+          >
+            📝
+          </button>
+          <button
+            onClick={() => onUpdate(node.id, { type: 'question' })}
+            className={`w-7 h-7 ${node.type === 'question' ? 'bg-blue-600 scale-110 z-10' : 'bg-slate-400 hover:bg-blue-500'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
+            title="질문"
+          >
+            ❓
+          </button>
+          <button
+            onClick={() => onUpdate(node.id, { type: 'choice' })}
+            className={`w-7 h-7 ${node.type === 'choice' ? 'bg-orange-500 scale-110 z-10' : 'bg-slate-400 hover:bg-orange-400'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white transition-all`}
+            title="선택지"
+          >
+            🔀
+          </button>
+        </div>
       )}
 
       {/* 본체 노드 */}
-      <div className={`tree-node-content relative flex flex-col z-10 rounded-none ${colors.bg} ${isMobileMode ? 'w-full' : 'w-[320px] md:w-[450px] shrink-0 max-w-[95vw]'} shadow-sm transition-all duration-200 cursor-default ${isSelected && !isMobileMode ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}
-           style={{ border: `${nodeBorderWidth} solid ${nodeBorderColor}` }}
-           onClick={(e) => {
-             onSelect(node.id);
-             if (!isMobileMode) e.stopPropagation();
-           }}
+      <div 
+        className={`tree-node-content relative flex flex-col z-10 rounded-none ${colors.bg} ${isMobileMode ? 'w-full' : 'w-[320px] md:w-[450px] shrink-0 max-w-[95vw]'} shadow-sm transition-all duration-200 cursor-default ${isSelected && !isMobileMode ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}
+        style={{ border: `${nodeBorderWidth} solid ${nodeBorderColor}` }}
+        onClick={(e) => {
+          onSelect(node.id);
+          if (!isMobileMode) e.stopPropagation();
+        }}
       >
-        {/* Top Section */}
         <div className={`flex items-center px-2 py-1 border-b-[3px] rounded-none ${node.is_reviewed ? 'border-green-500' : colors.border} ${colors.header}`}>
           {showCharacter && (
             <input
@@ -127,7 +152,6 @@ export default function DialogueNode({
           </div>
         </div>
 
-        {/* Middle Section */}
         <div className="p-1 space-y-1">
           <table className="w-full text-sm border-separate border-spacing-y-0.5">
             <tbody>
@@ -143,7 +167,7 @@ export default function DialogueNode({
                       <textarea
                         rows={1}
                         className="no-pan flex-1 border-2 border-slate-200 rounded-none p-1 text-xs resize-y bg-white outline-none focus:border-slate-800 transition-colors block font-medium text-slate-950"
-                        value={node.translations?.[lang.id as keyof DialogueNodeData['translations']] || ''}
+                        value={localTranslations[lang.id as keyof DialogueNodeData['translations']] || ''}
                         onChange={(e) => handleTranslationChange(lang.id as keyof DialogueNodeData['translations'], e.target.value)}
                         onKeyDownCapture={stopCapture}
                         onPointerDownCapture={stopCapture}
@@ -151,7 +175,7 @@ export default function DialogueNode({
                       />
                       <button
                         onClick={() => {
-                          const text = node.translations?.[lang.id as keyof DialogueNodeData['translations']] || '';
+                          const text = localTranslations[lang.id as keyof DialogueNodeData['translations']] || '';
                           if (text) {
                             navigator.clipboard.writeText(text).catch(() => {});
                           }
@@ -170,34 +194,37 @@ export default function DialogueNode({
         </div>
       </div>
 
-      {/* 우측 플로팅 버튼 영역 - 모바일 뷰일 경우 숨김 */}
+      {/* 우측 플로팅 버튼 영역 */}
       {!isMobileMode && (
         <div className={`absolute left-[100%] top-0 ml-2 flex flex-col gap-1 z-20 transition-all duration-200 ${isSelected ? 'opacity-100 visible' : 'opacity-0 invisible lg:group-hover:opacity-100 lg:group-hover:visible'}`}>
           <button
-          onClick={() => onAddChild(node.id, 'dialogue')}
-          className="w-7 h-7 bg-slate-800 hover:bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white"
-          title="하위 대사 추가"
-        >
-          ➕
-        </button>
-        <button
-          onClick={() => setShowCharacter(!showCharacter)}
-          className={`w-7 h-7 ${showCharacter ? 'bg-slate-500 hover:bg-slate-700' : 'bg-pink-500 hover:bg-pink-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white`}
-          title={showCharacter ? '캐릭터 숨기기' : '캐릭터 보이기'}
-        >
-          👤
-        </button>
-        {hasChildren && (
-          <button
-            onClick={onToggleFold}
-            className="w-7 h-7 bg-slate-600 hover:bg-slate-700 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white"
-            title={isFolded ? "펼치기" : "접기"}
+            onClick={() => onAddChild(node.id, 'dialogue')}
+            className="w-7 h-7 bg-slate-800 hover:bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white"
+            title="하위 대사 추가"
           >
-            {isFolded ? `🙈` : `👁️`}
+            ➕
           </button>
-        )}
+          <button
+            onClick={() => setShowCharacter(!showCharacter)}
+            className={`w-7 h-7 ${showCharacter ? 'bg-slate-500 hover:bg-slate-700' : 'bg-pink-500 hover:bg-pink-600'} text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white`}
+            title={showCharacter ? '캐릭터 숨기기' : '캐릭터 보이기'}
+          >
+            👤
+          </button>
+          {hasChildren && (
+            <button
+              onClick={() => onToggleFold(node.id)}
+              className="w-7 h-7 bg-slate-600 hover:bg-slate-700 text-white flex items-center justify-center font-black text-sm shadow-md border-2 border-white"
+              title={isFolded ? "펼치기" : "접기"}
+            >
+              {isFolded ? `🙈` : `👁️`}
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
+
+const DialogueNode = memo(DialogueNodeInner);
+export default DialogueNode;
