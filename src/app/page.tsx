@@ -24,8 +24,91 @@ export default function DialogueTreeApp() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // 사이드바 상태
+  const [collapsedScenes, setCollapsedScenes] = useState<Set<string>>(new Set()); // 장면 리스트 접기 상태
+  const [editingSceneId, setEditingSceneId] = useState<string | null>(null); // 현재 편집 중인 장면 ID
   const transformRef = useRef<any>(null);
   const pendingUpdates = useRef<Record<string, any>>({});
+
+  // 장면(Scene) 데이터 추출 로직
+  const getScenes = useCallback(() => {
+    const scenes: { id: string; title: string; customName: string | null; number: string; depth: number; parentSceneId: string | null }[] = [];
+    
+    const traverse = (nodeId: string, depth: number, parentSceneId: string | null, parentNumber: string) => {
+      const node = nodes.find(n => n.id === nodeId);
+      if (!node) return;
+
+      const children = nodes.filter(n => n.parent_id === nodeId);
+      const parentNode = nodes.find(n => n.id === node.parent_id);
+      
+      // 장면 추가 조건: 루트이거나 부모가 분기점(자식이 2개 이상)인 경우
+      const siblings = parentNode ? nodes.filter(n => n.parent_id === parentNode.id) : [];
+      const isNewScene = !parentNode || siblings.length > 1;
+      
+      let currentSceneId = parentSceneId;
+      let currentNumber = parentNumber;
+
+      if (isNewScene) {
+        currentSceneId = node.id;
+        // 형제 노드들 사이에서의 인덱스를 찾아 번호 생성 (예: 1-1, 1-2)
+        const sceneIndex = siblings.length > 0 ? siblings.indexOf(node) + 1 : 1;
+        currentNumber = parentNumber ? `${parentNumber}-${sceneIndex}` : `${sceneIndex}`;
+        
+        scenes.push({
+          id: node.id,
+          title: node.translations.kr || "내용 없음",
+          customName: node.scene_name || null,
+          number: currentNumber,
+          depth,
+          parentSceneId
+        });
+      }
+
+      // 자식 노드 탐색
+      children.forEach(child => {
+        traverse(child.id, isNewScene ? depth + 1 : depth, currentSceneId, currentNumber);
+      });
+    };
+
+    const root = nodes.find(n => n.parent_id === null);
+    if (root) traverse(root.id, 0, null, "");
+    return scenes;
+  }, [nodes]);
+
+  const toggleSceneCollapse = (id: string) => {
+    setCollapsedScenes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSceneClick = (id: string) => {
+    if (isMobileView) {
+      setFocusedNodeId(id);
+    } else {
+      setSelectedNodeId(id);
+      const el = document.getElementById(`tree-node-${id}`);
+      if (el && transformRef.current) {
+        // 해당 노드로 화면 이동 로직
+        const content = transformRef.current.instance.contentComponent;
+        const wrapper = transformRef.current.instance.wrapperComponent;
+        const elRect = el.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        const currentScale = transformRef.current.instance.transformState.scale;
+        
+        const unscaledElX = (elRect.left - contentRect.left + elRect.width / 2) / currentScale;
+        const unscaledElY = (elRect.top - contentRect.top + elRect.height / 2) / currentScale;
+        
+        const targetX = (wrapper.offsetWidth / 2) - unscaledElX * currentScale;
+        const targetY = (wrapper.offsetHeight / 4) - unscaledElY * currentScale;
+        
+        transformRef.current.setTransform(targetX, targetY, currentScale, 300);
+      }
+    }
+    setIsSidebarOpen(false);
+  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -220,7 +303,11 @@ export default function DialogueTreeApp() {
       `}} />
 
       <div className="fixed top-0 left-0 w-full flex-shrink-0 p-3 md:p-4 shadow-sm bg-white border-b border-slate-200 flex justify-between items-center z-[100] px-3 md:px-8">
-        <div className="flex items-center gap-2 md:gap-3 group cursor-default">
+        <div 
+          className="flex items-center gap-2 md:gap-3 group cursor-pointer" 
+          onClick={() => setIsSidebarOpen(true)}
+          title="장면 리스트 보기"
+        >
           <div className="w-8 h-8 md:w-10 md:h-10 bg-slate-800 rounded flex items-center justify-center font-black text-white text-lg md:text-xl shadow-lg group-hover:bg-blue-600 transition-colors">S</div>
           <h1 className="text-lg md:text-2xl font-black text-slate-800 tracking-tighter uppercase hidden sm:block">SUHA<span className="text-blue-600 italic">BABO</span></h1>
         </div>
@@ -392,6 +479,115 @@ export default function DialogueTreeApp() {
           </>
         )}
       </div>
+
+      {/* 장면 리스트 사이드바 */}
+      {isSidebarOpen && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/50 z-[200] backdrop-blur-sm transition-opacity"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+          <div className="fixed left-0 top-0 h-full w-[280px] md:w-[350px] bg-white z-[210] shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 className="text-xl font-black text-slate-800 tracking-tighter uppercase">SCENE LIST</h2>
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500 transition-colors font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
+              {getScenes().map((scene, index) => {
+                // 부모 장면이 접혀있는지 확인
+                let isParentCollapsed = false;
+                let currentParentId = scene.parentSceneId;
+                while (currentParentId) {
+                  if (collapsedScenes.has(currentParentId)) {
+                    isParentCollapsed = true;
+                    break;
+                  }
+                  const parent = getScenes().find(s => s.id === currentParentId);
+                  currentParentId = parent ? parent.parentSceneId : null;
+                }
+
+                if (isParentCollapsed) return null;
+
+                const hasSubScenes = getScenes().some(s => s.parentSceneId === scene.id);
+                const isCollapsed = collapsedScenes.has(scene.id);
+                const title = scene.customName || scene.title || "내용 없음";
+                const isEditing = editingSceneId === scene.id;
+
+                return (
+                  <div 
+                    key={scene.id} 
+                    className="group flex items-center"
+                    style={{ paddingLeft: `${scene.depth * 16}px` }}
+                  >
+                    <button
+                      onClick={() => toggleSceneCollapse(scene.id)}
+                      className={`w-6 h-6 flex items-center justify-center transition-transform duration-200 ${isCollapsed ? '' : 'rotate-90'} ${hasSubScenes ? 'visible' : 'invisible'}`}
+                    >
+                      <span className="text-slate-400 font-bold" style={{ fontSize: `${Math.max(14 - scene.depth * 2, 8)}px` }}>▶</span>
+                    </button>
+                    <div 
+                      className={`flex-1 px-3 py-1 rounded-lg transition-all flex items-center gap-2 hover:bg-slate-100 ${selectedNodeId === scene.id ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600'}`}
+                    >
+                      <span className="text-[10px] font-black opacity-30 flex-shrink-0">#{scene.number}</span>
+                      
+                      {isEditing ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          className="w-full text-sm bg-white border border-blue-400 px-1 py-0.5 rounded outline-none"
+                          defaultValue={scene.customName || title}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleUpdateNode(scene.id, { scene_name: (e.target as HTMLInputElement).value });
+                              setEditingSceneId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingSceneId(null);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            handleUpdateNode(scene.id, { scene_name: e.target.value });
+                            setEditingSceneId(null);
+                          }}
+                        />
+                      ) : (
+                        <div className="flex-1 flex items-center justify-between min-w-0">
+                          <span 
+                            className="truncate text-sm font-medium cursor-pointer"
+                            onClick={() => handleSceneClick(scene.id)}
+                            onDoubleClick={() => setEditingSceneId(scene.id)}
+                          >
+                            {title.length > 25 ? title.substring(0, 25) + '...' : title}
+                          </span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingSceneId(scene.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded text-slate-400 transition-all text-[10px]"
+                            title="장면 이름 수정"
+                          >
+                            ✏️
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="p-4 border-t border-slate-100 bg-slate-50 text-[10px] text-slate-400 font-bold text-center">
+              분기점을 기준으로 장면이 자동 생성됩니다.
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
