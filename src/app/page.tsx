@@ -210,13 +210,13 @@ export default function DialogueTreeApp() {
         .tree-container > .tree-node-wrapper { padding-top: 0; }
       `}} />
 
-      <div className="flex-shrink-0 p-4 shadow-sm bg-white border-b border-slate-200 flex justify-between items-center z-20 relative px-8">
-        <div className="flex items-center gap-3 group cursor-default">
-          <div className="w-10 h-10 bg-slate-800 rounded flex items-center justify-center font-black text-white text-xl shadow-lg group-hover:bg-blue-600 transition-colors">S</div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">SUHA<span className="text-blue-600 italic">BABO</span></h1>
+      <div className="flex-shrink-0 p-3 md:p-4 shadow-sm bg-white border-b border-slate-200 flex justify-between items-center z-20 relative px-3 md:px-8">
+        <div className="flex items-center gap-2 md:gap-3 group cursor-default">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-slate-800 rounded flex items-center justify-center font-black text-white text-lg md:text-xl shadow-lg group-hover:bg-blue-600 transition-colors">S</div>
+          <h1 className="text-lg md:text-2xl font-black text-slate-800 tracking-tighter uppercase hidden sm:block">SUHA<span className="text-blue-600 italic">BABO</span></h1>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex gap-1 bg-slate-200 p-1 rounded">
+        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+          <div className="flex gap-1 bg-slate-200 p-0.5 md:p-1 rounded">
             {[
               { id: 'kr', label: 'KR' },
               { id: 'en', label: 'EN' },
@@ -225,19 +225,19 @@ export default function DialogueTreeApp() {
               <button
                 key={lang.id}
                 onClick={() => setVisibleLangs(prev => ({ ...prev, [lang.id]: !prev[lang.id as keyof typeof prev] }))}
-                className={`px-3 py-1 rounded text-xs font-black transition-colors ${visibleLangs[lang.id as keyof typeof visibleLangs] ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+                className={`px-2 md:px-3 py-1 rounded text-[10px] md:text-xs font-black transition-colors ${visibleLangs[lang.id as keyof typeof visibleLangs] ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
               >
                 {lang.label}
               </button>
             ))}
           </div>
-          <button onClick={handleResetView} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm shadow-lg transition-all active:scale-95 flex items-center gap-2">🏠</button>
+          <button onClick={handleResetView} className="p-2 md:px-4 md:py-2 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold text-sm shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">🏠</button>
           
-          <div className="relative group flex items-center ml-2">
-            <div className="w-8 h-8 rounded-full bg-slate-200 hover:bg-blue-100 text-slate-500 hover:text-blue-600 font-black text-sm flex items-center justify-center transition-colors cursor-help">
+          <div className="relative group flex items-center ml-1 md:ml-2">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-slate-200 hover:bg-blue-100 text-slate-500 hover:text-blue-600 font-black text-xs md:text-sm flex items-center justify-center transition-colors cursor-help">
               ?
             </div>
-            <div className="absolute right-0 top-full mt-2 w-max max-w-sm bg-slate-800 text-white p-4 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[9999] border-2 border-slate-700 pointer-events-none">
+            <div className="absolute right-0 top-full mt-2 w-max max-w-[90vw] md:max-w-sm bg-slate-800 text-white p-3 md:p-4 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[9999] border-2 border-slate-700 pointer-events-none">
               <h3 className="font-bold text-sm mb-3 text-slate-300 border-b border-slate-700 pb-2">기능 설명 / Help / ヘルプ</h3>
               
               <div className="text-[11px] text-slate-300 mb-4 space-y-1.5 bg-slate-700/50 p-2.5 rounded-lg border border-slate-600/50">
@@ -245,22 +245,22 @@ export default function DialogueTreeApp() {
                 <p>💡 <b>색상 구분:</b> 종류 버튼(📝❓🔀)을 누르면 대사 상자의 <b>색상이 변해서</b> 시각적으로 알아보기 아주 쉽습니다!</p>
               </div>
 
-              <ul className="text-xs space-y-2.5 font-medium tracking-tight">
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">📝</span> <span>노드 종류: 일반 대사 / Type: Dialogue / タイプ: 通常のセリフ</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">❓</span> <span>노드 종류: 질문 / Type: Question / タイプ: 質問</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🔀</span> <span>노드 종류: 선택지 / Type: Choice / タイプ: 選択肢</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">➕</span> <span>하위 대사 추가 / Add Child / 子セリフ追加</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👤</span> <span>캐릭터 칸 숨기기 / Toggle Character / キャラクタートグル</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">👁️</span> <span>하위 대사 접기 / Fold Lines / 折りたたむ・展開</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">✅</span> <span>검토 완료 / Review Complete / 確認完了</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">❌</span> <span>대사 삭제 / Delete / セリフ削除</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">📋</span> <span>텍스트 복사 / Copy Text / テキストをコピー</span></li>
-                <li className="flex gap-2 items-center"><span className="w-6 text-center text-base">🏠</span> <span>최초 대사로 이동 / Reset View / 視点をリセット</span></li>
+              <ul className="text-[11px] md:text-xs space-y-2.5 font-medium tracking-tight">
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">📝</span> <span>노드 종류: 일반 대사 / Type: Dialogue</span></li>
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">❓</span> <span>노드 종류: 질문 / Type: Question</span></li>
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">🔀</span> <span>노드 종류: 선택지 / Type: Choice</span></li>
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">➕</span> <span>하위 대사 추가 / Add Child</span></li>
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">👤</span> <span>캐릭터 칸 숨기기 / Toggle Character</span></li>
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">👁️</span> <span>하위 대사 접기 / Fold Lines</span></li>
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">✅</span> <span>검토 완료 / Review Complete</span></li>
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">❌</span> <span>대사 삭제 / Delete</span></li>
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">📋</span> <span>텍스트 복사 / Copy Text</span></li>
+                <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">🏠</span> <span>최초 대사로 이동 / Reset View</span></li>
               </ul>
             </div>
           </div>
 
-          <div className="text-xs font-bold text-slate-400 border-l pl-4 border-slate-200">● LIVE</div>
+          <div className="hidden md:block text-xs font-bold text-slate-400 border-l pl-4 border-slate-200">● LIVE</div>
         </div>
       </div>
 
@@ -269,10 +269,10 @@ export default function DialogueTreeApp() {
           <div className="h-full w-full flex items-center justify-center text-white font-black text-2xl animate-pulse tracking-widest bg-slate-800 z-50">SYNCING...</div>
         ) : (
           <>
-            <div className="fixed right-8 bottom-8 flex flex-col gap-2 bg-white/90 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border-4 border-slate-300" style={{ zIndex: 9999 }}>
-              <button onClick={() => transformRef.current?.zoomIn()} className="w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm" title="확대(Zoom In)">➕</button>
-              <button onClick={() => transformRef.current?.zoomOut()} className="w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-black text-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm" title="축소(Zoom Out)">➖</button>
-              <button onClick={handleResetView} className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-xl flex items-center justify-center transition-all active:scale-90 shadow-lg mt-2" title="최초 노드로 화면 정중앙 이동(Reset View)">🏠</button>
+            <div className="fixed right-4 bottom-4 md:right-8 md:bottom-8 flex flex-col gap-1 md:gap-2 bg-white/90 backdrop-blur-sm p-2 md:p-3 rounded-xl md:rounded-2xl shadow-2xl border-2 md:border-4 border-slate-300" style={{ zIndex: 9999 }}>
+              <button onClick={() => transformRef.current?.zoomIn()} className="w-9 h-9 md:w-12 md:h-12 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg md:rounded-xl font-black text-lg md:text-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm" title="확대(Zoom In)">➕</button>
+              <button onClick={() => transformRef.current?.zoomOut()} className="w-9 h-9 md:w-12 md:h-12 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg md:rounded-xl font-black text-lg md:text-2xl flex items-center justify-center transition-all active:scale-90 shadow-sm" title="축소(Zoom Out)">➖</button>
+              <button onClick={handleResetView} className="w-9 h-9 md:w-12 md:h-12 bg-slate-800 hover:bg-slate-700 text-white rounded-lg md:rounded-xl font-black text-base md:text-xl flex items-center justify-center transition-all active:scale-90 shadow-lg mt-1 md:mt-2" title="최초 대사로 이동(Reset View)">🏠</button>
             </div>
             <TransformWrapper ref={transformRef} initialScale={1} minScale={0.1} maxScale={4} centerOnInit={true} limitToBounds={false} doubleClick={{ disabled: true }} panning={{ excluded: ["input", "textarea", "select", "button", "no-pan"] }}>
               <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "auto", height: "auto" }}>
