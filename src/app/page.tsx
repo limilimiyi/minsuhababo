@@ -255,6 +255,15 @@ export default function DialogueTreeApp() {
                 <p>💡 <b>색상 구분:</b> 종류 버튼(📝❓🔀)을 누르면 대사 상자의 <b>색상이 변해서</b> 시각적으로 알아보기 아주 쉽습니다!</p>
               </div>
 
+              <div className="mb-4">
+                <button 
+                  onClick={() => setIsMobileView(!isMobileView)} 
+                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {isMobileView ? "💻 PC 화면으로 전환" : "📱 모바일 화면으로 전환"}
+                </button>
+              </div>
+
               <ul className="text-[11px] md:text-xs space-y-2.5 font-medium tracking-tight">
                 <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">📝</span> <span>노드 종류: 일반 대사 / Type: Dialogue</span></li>
                 <li className="flex gap-2 items-center"><span className="w-5 md:w-6 text-center text-sm md:text-base">❓</span> <span>노드 종류: 질문 / Type: Question</span></li>
